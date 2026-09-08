@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>チュートリアル</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            max-width: 750px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+        }
+
+        /* タブUI */
+        .tab-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            margin-bottom: 12px;
+            background: #f1f5f9;
+            padding: 6px;
+            border-radius: 10px;
+        }
+
+        .tab-button {
+            padding: 10px 0;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #64748b;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .tab-button.active {
+            background: #ffffff;
+            color: #2563eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .tab-button.locked {
+            color: #94a3b8;
+            cursor: not-allowed;
+            background: transparent;
+        }
+
+        .tab-button.cleared {
+            color: #16a34a;
+        }
+
+        /* NGマス個数表示エリア */
+        .ng-count-panel {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+
+        /* 重ね合わせ表示エリア */
+        .stage-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1.414 / 1;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #e5e7eb;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 16px;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        .layer-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .grid-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+        }
+
+        #bottomGrid {
+            opacity: 0.8;
+            transition: opacity 0.05s linear;
+        }
+
+        .bottom-grid-cell {
+            background-color: #ffffff;
+            border: 1px solid #000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #000000;
+            overflow: hidden;
+        }
+
+        .bottom-grid-cell span {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #000;
+            user-select: none;
+        }
+
+        #topGrid {
+            opacity: 1.0 !important;
+        }
+
+        .top-grid-cell {
+            background-color: #334155;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: opacity 0.2s, background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        .top-grid-cell:hover {
+            background-color: #1e293b;
+        }
+
+        .top-grid-cell.hidden {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+
+        .top-grid-cell.flagged {
+            cursor: not-allowed;
+            /* スライダーの透明度を反映させるための設定 */
+            transition: opacity 0.1s ease;
+        }
+
+        /* コントロールエリア */
+        .controls-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .control-panel {
+            background: #f8fafc;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            color: #475569;
+        }
+
+        .opacity-badge {
+            background: #2563eb;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #cbd5e1;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #2563eb;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+        }
+
+        /* 解答入力エリア */
+        .answer-panel {
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .answer-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        .answer-input:focus {
+            border-color: #2563eb;
+        }
+
+        .answer-input:disabled {
+            background-color: #f1f5f9;
+            color: #16a34a;
+            font-weight: bold;
+            border-color: #86efac;
+        }
+
+        .answer-button {
+            padding: 10px 20px;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .answer-button:hover {
+            background: #1d4ed8;
+        }
+
+        .answer-button:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+        .answer-feedback {
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-top: 4px;
+            min-height: 1.2em;
+        }
+
+        .feedback-error {
+            color: #ef4444;
+        }
+
+        .feedback-success {
+            color: #16a34a;
+        }
+
+        /* カウントダウンオーバーレイ (NGマス踏み込み用) */
+        .countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .countdown-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .countdown-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ef4444;
+            margin-bottom: 15px;
+            letter-spacing: 0.05em;
+        }
+
+        .countdown-timer {
+            font-size: 6rem;
+            font-weight: 800;
+            font-family: monospace, sans-serif;
+            color: #ffffff;
+            line-height: 1;
+        }
+
+        .countdown-sub {
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-top: 15px;
+        }
+
+        /* スタート画面全体（画面全体を覆う幕） */
+        .start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(240, 242, 245, 0.98);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        /* スタート画面が非表示のとき */
+        .start-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* モーダル枠 */
+        .start-modal {
+            background: #ffffff;
+            padding: 36px 32px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+
+        /* スタートボタン */
+        .start-button {
+            padding: 16px 48px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #2563eb;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transition: transform 0.1s ease, background-color 0.2s ease;
+        }
+
+        .start-button:hover {
+           background-color: #1d4ed8;
+         transform: translateY(-2px);
+        }
+
+        .start-button:active {
+            transform: translateY(0);
+        }
+
+        /* 注意書きスペース */
+        .start-notice {
+          background: #f8fafc;
+          border: 1px dashed #cbd5e1;
+          border-radius: 12px;
+          padding: 16px;
+           width: 100%;
+           font-size: 0.85rem;
+           color: #475569;
+            text-align: left;
+            line-height: 1.6;
+        }
+
+        .start-notice p:first-child {
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 6px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- スタート画面（初期表示） -->
+        <div class="start-overlay" id="startOverlay">
+            <div class="start-modal">
+                <button type="button" class="start-button" id="startBtn">スタート</button>
+        
+                <!-- 注意書きエリア -->
+                <div class="start-notice">
+                    <p>【注意】</p>
+                    <p>これはチュートリアル用のサイトです。ゲームを始める際は裏面のQRコードから別のページを開いてください。</p>
+                </div>
+            </div>
+        </div>
+
+    <div class="container">
+        <h1 id="stageTitle">謎解きスイーパー/チュートリアル</h1>
+
+        <!-- タブ切り替え -->
+        <div class="tab-container" id="tabContainer"></div>
+
+        <!-- タブと盤面の間のNGマス数表示 -->
+        <div class="ng-count-panel" id="ngCountPanel">
+            ⚠️ 残りの地雷数／総地雷数：<span id="remainingNgCount">0</span>／ <span id="totalNgCount">0</span>
+        </div>
+
+        <!-- メイン表示領域 -->
+        <div class="stage-wrapper">
+            <img class="layer-image" id="bgImage" src="" alt="背景画像">
+            <div class="grid-layer" id="bottomGrid"></div>
+            <div class="grid-layer" id="topGrid"></div>
+        </div>
+
+        <!-- コントロール・解答入力領域 -->
+        <div class="controls-wrapper">
+            <div class="answer-panel">
+                <input type="text" id="answerInput" class="answer-input" placeholder="解答をひらがなで入力してください" autocomplete="off">
+                <button type="button" id="submitAnswerBtn" class="answer-button">送信</button>
+            </div>
+            <div class="answer-feedback" id="feedbackMessage"></div>
+
+            <div class="control-panel">
+                <div class="slider-label">
+                    <span>数字層（白マス）の透明度</span>
+                    <span class="opacity-badge" id="opacityDisplay">80%</span>
+                </div>
+                <div class="slider-container">
+                    <input type="range" id="opacitySlider" min="0" max="100" value="80">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NGマス踏み込み時のカウントダウンオーバーレイ -->
+    <div class="countdown-overlay" id="countdownOverlay">
+        <div class="countdown-title">お手つき！</div>
+        <div class="countdown-timer" id="countdownNumber">5</div>
+        <div class="countdown-sub">ロック解除までお待ちください</div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 【設定項目】ステージデータ構成
+        // ==========================================
+        const STAGES = [
+            {
+                id: 1,
+                name: '問 1',
+                image: '',
+                answer: 'かたたたき',
+                cols: 3,
+                rows: 2,
+                wrongCells: [3, 6],
+                initialOpenCells: [4],
+                customLabels: [, 2, , 0, , ]
+            },
+            {
+                id: 2,
+                name: '問 2',
+                image: '',
+                answer: 'かたたたき',
+                cols: 4,
+                rows: 3,
+                wrongCells: [7, 8, 9, 11],
+                initialOpenCells: [5, 10],
+                customLabels: [, 1, 2,,1,,,,,3,,3]
+            },
+            
+        ];
+
+        const LOCK_SECONDS = 20;      // NGマスを踏んだ時のペナルティ（秒）
+        const LONG_PRESS_MS = 500;   // タッチ長押し判定（ミリ秒）
+
+        // ゲーム状態の管理
+        let currentStageIndex = 0;
+        let unlockedStageMax = 0;
+        
+        const stageStates = {};
+        const stageAnswers = {};
+
+        // アプリ要素の取得
+        const stageTitle = document.getElementById('stageTitle');
+        const bgImage = document.getElementById('bgImage');
+        const bottomGrid = document.getElementById('bottomGrid');
+        const topGrid = document.getElementById('topGrid');
+        const opacitySlider = document.getElementById('opacitySlider');
+        const opacityDisplay = document.getElementById('opacityDisplay');
+        const tabContainer = document.getElementById('tabContainer');
+        const answerInput = document.getElementById('answerInput');
+        const submitAnswerBtn = document.getElementById('submitAnswerBtn');
+        const feedbackMessage = document.getElementById('feedbackMessage');
+        const ngCount = document.getElementById('ngCount');
+
+        const countdownOverlay = document.getElementById('countdownOverlay');
+        const countdownNumber = document.getElementById('countdownNumber');
+
+        let isLocked = false;
+        let countdownInterval = null;
+
+        // 初期状態データ構造の作成
+        function initStates() {
+            STAGES.forEach((stage, sIdx) => {
+                stageStates[sIdx] = {};
+                stageAnswers[sIdx] = null;
+                const totalCells = stage.cols * stage.rows;
+                for (let cIdx = 1; cIdx <= totalCells; cIdx++) {
+                    if (stage.initialOpenCells && stage.initialOpenCells.includes(cIdx)) {
+                        stageStates[sIdx][cIdx] = 'hidden';
+                    } else {
+                        stageStates[sIdx][cIdx] = 'normal';
+                    }
+                }
+            });
+        }
+
+        // NGマスを踏んだ際のペナルティ画面
+        function triggerPenalty() {
+            if (isLocked) return;
+            isLocked = true;
+
+            let remainingTime = LOCK_SECONDS;
+            countdownNumber.textContent = remainingTime;
+            countdownOverlay.classList.add('active');
+
+            countdownInterval = setInterval(() => {
+                remainingTime--;
+                if (remainingTime > 0) {
+                    countdownNumber.textContent = remainingTime;
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownOverlay.classList.remove('active');
+                    isLocked = false;
+                }
+            }, 1000);
+        }
+
+        // セルを「開く」処理
+        function handlePrimaryAction(tCell, cellIndex, isWrongCell) {
+            if (isLocked || stageStates[currentStageIndex][cellIndex] !== 'normal') return;
+
+            if (!isWrongCell) {
+                stageStates[currentStageIndex][cellIndex] = 'hidden';
+                tCell.classList.add('hidden');
+            } else {
+                stageStates[currentStageIndex][cellIndex] = 'flagged';
+                tCell.textContent = '🚩';
+                tCell.classList.add('flagged');
+                tCell.style.opacity = opacitySlider.value / 100;
+                triggerPenalty();
+            }
+
+            updateNgCountDisplay();
+
+        }
+
+        // セルに「旗を立てる」処理
+        function handleSecondaryAction(tCell, cellIndex, isWrongCell) {
+            if (isLocked || stageStates[currentStageIndex][cellIndex] !== 'normal') return;
+
+            if (!isWrongCell) {
+                stageStates[currentStageIndex][cellIndex] = 'hidden';
+                tCell.classList.add('hidden');
+                triggerPenalty();
+            } else {
+                stageStates[currentStageIndex][cellIndex] = 'flagged';
+                tCell.textContent = '🚩';
+                tCell.classList.add('flagged');
+                tCell.style.opacity = opacitySlider.value / 100;
+            }
+
+            updateNgCountDisplay();
+
+        }
+
+        // 解答チェック機能
+        function checkAnswer() {
+            if (stageAnswers[currentStageIndex]) return;
+
+            const inputVal = answerInput.value.trim();
+            if (!inputVal) return;
+
+            const currentStage = STAGES[currentStageIndex];
+            
+            if (inputVal.toLowerCase() === currentStage.answer.toLowerCase()) {
+                stageAnswers[currentStageIndex] = inputVal;
+
+                feedbackMessage.className = 'answer-feedback feedback-success';
+                feedbackMessage.textContent = '🎉 正解です！次の問題が解放されました。';
+                
+                answerInput.disabled = true;
+                submitAnswerBtn.disabled = true;
+
+                if (currentStageIndex + 1 > unlockedStageMax && currentStageIndex + 1 < STAGES.length) {
+                    unlockedStageMax = currentStageIndex + 1;
+                }
+                
+                buildTabs();
+            } else {
+                feedbackMessage.className = 'answer-feedback feedback-error';
+                feedbackMessage.textContent = '❌ 不正解です。もう一度考えてみましょう！';
+            }
+        }
+
+        // タブUI描画
+        function buildTabs() {
+            tabContainer.innerHTML = '';
+            STAGES.forEach((stage, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                
+                const isCurrent = idx === currentStageIndex;
+                const isUnlocked = idx <= unlockedStageMax;
+                
+                let icon = '';
+                if (!isUnlocked) {
+                    icon = '🔒 ';
+                } else if (idx < unlockedStageMax || stageAnswers[idx] !== null) {
+                    icon = '✅ ';
+                }
+
+                btn.className = `tab-button ${isCurrent ? 'active' : ''} ${!isUnlocked ? 'locked' : ''} ${(idx < unlockedStageMax || stageAnswers[idx] !== null) ? 'cleared' : ''}`;
+                btn.innerHTML = `${icon}${stage.name}`;
+
+                btn.addEventListener('click', () => {
+                    if (!isUnlocked || currentStageIndex === idx) return;
+                    switchStage(idx);
+                });
+
+                tabContainer.appendChild(btn);
+            });
+        }
+
+        // ステージ切替処理
+        function switchStage(targetIndex) {
+            currentStageIndex = targetIndex;
+            buildTabs();
+            loadStage(currentStageIndex);
+        }
+
+        // 盤面読み込み
+        function loadStage(stageIndex) {
+            const stage = STAGES[stageIndex];
+            const savedAnswer = stageAnswers[stageIndex];
+
+            // NGマスの個数を更新
+            const wrongCount = stage.wrongCells ? stage.wrongCells.length : 0;
+            updateNgCountDisplay();
+
+            if (savedAnswer !== null) {
+                answerInput.value = savedAnswer;
+                answerInput.disabled = true;
+                submitAnswerBtn.disabled = true;
+                feedbackMessage.className = 'answer-feedback feedback-success';
+                feedbackMessage.textContent = '🎉 クリア済みです！';
+            } else {
+                answerInput.value = '';
+                answerInput.disabled = false;
+                submitAnswerBtn.disabled = false;
+                feedbackMessage.textContent = '';
+            }
+
+            bgImage.src = stage.image;
+
+            const cols = stage.cols;
+            const rows = stage.rows;
+
+            bottomGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            bottomGrid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+            topGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            topGrid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+            bottomGrid.innerHTML = '';
+            topGrid.innerHTML = '';
+
+            const totalCells = cols * rows;
+
+            for (let i = 0; i < totalCells; i++) {
+                const cellIndex = i + 1;
+
+                const bCell = document.createElement('div');
+                bCell.className = 'bottom-grid-cell';
+                
+                const span = document.createElement('span');
+                const labels = stage.customLabels || [];
+                span.textContent = labels.length > i ? labels[i] : cellIndex;
+                bCell.appendChild(span);
+                bottomGrid.appendChild(bCell);
+
+                const tCell = document.createElement('div');
+                tCell.className = 'top-grid-cell';
+                
+                const isWrongCell = (stage.wrongCells || []).includes(cellIndex);
+                const currentState = stageStates[stageIndex][cellIndex];
+
+                if (currentState === 'hidden') {
+                    tCell.classList.add('hidden');
+                } else if (currentState === 'flagged') {
+                    tCell.textContent = '🚩';
+                    tCell.classList.add('flagged');
+                    tCell.style.opacity = opacitySlider.value / 100;
+                }
+
+                tCell.addEventListener('contextmenu', (e) => e.preventDefault());
+
+                tCell.addEventListener('mousedown', (e) => {
+                    if (e.pointerType === 'touch') return;
+
+                    if (e.button === 0) {
+                        handlePrimaryAction(tCell, cellIndex, isWrongCell);
+                    } else if (e.button === 2) {
+                        handleSecondaryAction(tCell, cellIndex, isWrongCell);
+                    }
+                });
+
+                let touchTimer = null;
+                let isLongPress = false;
+
+                tCell.addEventListener('touchstart', (e) => {
+                    if (isLocked) return;
+                    isLongPress = false;
+
+                    touchTimer = setTimeout(() => {
+                        isLongPress = true;
+                        if (navigator.vibrate) navigator.vibrate(50);
+                        handleSecondaryAction(tCell, cellIndex, isWrongCell);
+                    }, LONG_PRESS_MS);
+                }, { passive: true });
+
+                tCell.addEventListener('touchend', (e) => {
+                    clearTimeout(touchTimer);
+
+                    if (!isLongPress) {
+                        e.preventDefault();
+                        handlePrimaryAction(tCell, cellIndex, isWrongCell);
+                    }
+                });
+
+                tCell.addEventListener('touchmove', () => {
+                    clearTimeout(touchTimer);
+                }, { passive: true });
+
+                topGrid.appendChild(tCell);
+            }
+        }
+
+        // イベントリスナー設定
+        submitAnswerBtn.addEventListener('click', checkAnswer);
+        
+        answerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        // 十字キーによるタブ移動
+        window.addEventListener('keydown', (e) => {
+            if (document.activeElement === answerInput) return;
+
+            if (e.key === 'ArrowLeft') {
+                if (currentStageIndex > 0) {
+                    switchStage(currentStageIndex - 1);
+                }
+            } else if (e.key === 'ArrowRight') {
+                if (currentStageIndex < unlockedStageMax) {
+                    switchStage(currentStageIndex + 1);
+                }
+            }
+        });
+
+        opacitySlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const opacityValue = val / 100;
+
+            // 1. 下層（白マス）の透明度を変更
+            bottomGrid.style.opacity = opacityValue;
+
+            // 2. 旗（flagged）が立っているマスの透明度も変更
+            const flaggedCells = document.querySelectorAll('.top-grid-cell.flagged');
+            flaggedCells.forEach(cell => {
+                cell.style.opacity = opacityValue;
+            });
+
+            opacityDisplay.textContent = `${val}%`;
+        });
+        
+        // アプリ起動
+        initStates();
+        buildTabs();
+        loadStage(currentStageIndex);
+
+        // NGマスの残り数と総数を更新する関数
+        function updateNgCountDisplay() {
+            const stage = STAGES[currentStageIndex];
+            const wrongCells = stage.wrongCells || [];
+            const totalWrong = wrongCells.length;
+
+            // まだ見つけられていない（Normal状態の）NGマスの数をカウント
+            let remainingWrong = 0;
+            wrongCells.forEach(cellIndex => {
+                if (stageStates[currentStageIndex][cellIndex] === 'normal') {
+                    remainingWrong++;
+                }
+            });
+
+            // 画面のテキストを更新
+            const remainingEl = document.getElementById('remainingNgCount');
+            const totalEl = document.getElementById('totalNgCount');
+    
+            if (remainingEl && totalEl) {
+                remainingEl.textContent = remainingWrong;
+                totalEl.textContent = totalWrong;
+            }
+                
+        }
+
+        // スタートボタンの処理
+        const startOverlay = document.getElementById('startOverlay');
+        const startBtn = document.getElementById('startBtn');
+
+        startBtn.addEventListener('click', () => {
+            startOverlay.classList.add('hidden');
+        });
+
+    </script>
+</body>
+</html>
