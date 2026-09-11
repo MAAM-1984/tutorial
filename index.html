@@ -522,7 +522,7 @@
     <div class="countdown-overlay" id="countdownOverlay">
         <div class="countdown-title">お手つき！</div>
         <div class="countdown-timer" id="countdownNumber">5</div>
-        <div class="countdown-sub">ロック解除までお待ちください</div>
+        <div class="countdown-sub">ロック解除までお待ちください。　⚠️本番は20秒間です</div>
     </div>
 
     <script>
@@ -555,8 +555,8 @@
             
         ];
 
-        const LOCK_SECONDS = 20;      // NGマスを踏んだ時のペナルティ（秒）
-        const LONG_PRESS_MS = 500;   // タッチ長押し判定（ミリ秒）
+        const LOCK_SECONDS = 5;      // NGマスを踏んだ時のペナルティ（秒）
+        const LONG_PRESS_MS = 200;   // タッチ長押し判定（ミリ秒）
 
         // ゲーム状態の管理
         let currentStageIndex = 0;
