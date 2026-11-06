@@ -735,23 +735,20 @@
                 }
                 
                 buildTabs();
+
+                // === 【修正】最終ステージクリアの判定とモーダル表示をここに移動 ===
+                const isLastStage = (currentStageIndex === STAGES.length - 1);
+                if (isLastStage) {
+                    const imageToShow = currentStage.clearImage || currentStage.image;
+                    showClearModal(imageToShow);
+                }
+
             } else {
                 feedbackMessage.className = 'answer-feedback feedback-error';
                 feedbackMessage.textContent = '❌ 不正解です。もう一度考えてみましょう！';
             }
-
-            // 正解した時の処理内に以下を追加
-            const isLastStage = (currentStageIndex === STAGES.length - 1);
-
-            if (isLastStage) {
-                const currentStage = STAGES[currentStageIndex];
-                // clearImage があればそれを使い、無ければ通常の image を使う（保険）
-                const imageToShow = currentStage.clearImage || currentStage.image;
-                
-                showClearModal(imageToShow);
-            }
         }
-
+        
         // タブUI描画
         function buildTabs() {
             tabContainer.innerHTML = '';
